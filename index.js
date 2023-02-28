@@ -4,9 +4,9 @@ const cookieParser = require("cookie-parser");
 const {
   logErrorMiddleware,
   returnError,
-} = require("./middlewares/error-handler");
-const authRoute = require("./routes/auth-route");
-const db = require("./models");
+} = require("./src/middlewares/error-handler");
+const authRoute = require("./src/routes/auth-route");
+const db = require("./src/models");
 const app = express();
 const PORT = 6000;
 
