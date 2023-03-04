@@ -24,8 +24,8 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-// ADMIN AND AUTHENTICATED USER
-const verifyTokenAndModerator = (req, res, next) => {
+// MODERATOR ONLY
+const verifyTokenModerator = (req, res, next) => {
   verifyToken(req, res, async () => {
     const foundUser = await User.findByPk(req.user.id);
     const userRoles = await foundUser.getRoles();
@@ -35,18 +35,83 @@ const verifyTokenAndModerator = (req, res, next) => {
         return;
       }
     }
-
-    // res.status(403).send({
-    //   message: "Require Moderator Role!",
-    // });
-
     return next(
       new BaseError("Requires Moderator Role!", httpStatusCodes.UNAUTHORIZED)
     );
   });
 };
 
+// ADMIN ONLY
+const verifyTokenAdmin = (req, res, next) => {
+  verifyToken(req, res, async () => {
+    const foundUser = await User.findByPk(req.user.id);
+    const userRoles = await foundUser.getRoles();
+    for (let i = 0; i < userRoles.length; i++) {
+      if (userRoles[i].name === "admin") {
+        next();
+        return;
+      }
+    }
+    return next(
+      new BaseError("Requires Admin Role!", httpStatusCodes.UNAUTHORIZED)
+    );
+  });
+};
+
+// ADMIN AND MODERATOR ONLY
+const verifyTokenAdminAndModerator = (req, res, next) => {
+  verifyToken(req, res, async () => {
+    const foundUser = await User.findByPk(req.user.id);
+    const userRoles = await foundUser.getRoles();
+    for (let i = 0; i < userRoles.length; i++) {
+      if (userRoles[i].name === "admin") {
+        next();
+        return;
+      }
+
+      if (userRoles[i].name === "moderator") {
+        next();
+        return;
+      }
+    }
+    return next(
+      new BaseError(
+        "Requires Admin Or Moderator Role!",
+        httpStatusCodes.UNAUTHORIZED
+      )
+    );
+  });
+};
+
+// ADMIN AND MODERATOR ONLY
+const verifyTokenAdminAndUser = (req, res, next) => {
+  verifyToken(req, res, async () => {
+    const foundUser = await User.findByPk(req.user.id);
+    const userRoles = await foundUser.getRoles();
+    for (let i = 0; i < userRoles.length; i++) {
+      if (userRoles[i].name === "admin") {
+        next();
+        return;
+      }
+
+      if (userRoles[i].name === "user") {
+        next();
+        return;
+      }
+    }
+    return next(
+      new BaseError(
+        "Requires Admin Or User Role!",
+        httpStatusCodes.UNAUTHORIZED
+      )
+    );
+  });
+};
+
 module.exports = {
   verifyToken,
-  verifyTokenAndModerator,
+  verifyTokenModerator,
+  verifyTokenAdmin,
+  verifyTokenAdminAndModerator,
+    verifyTokenAdminAndUser
 };
