@@ -2,6 +2,8 @@ const BaseError = require("../utils/base-error");
 const httpStatusCodes = require("../utils/http-status-codes");
 const db = require("../models");
 const User = db.User;
+const Role = db.Role;
+const Op = db.Sequelize.Op;
 const bcrypt = require("bcryptjs");
 const { sign } = require("jsonwebtoken");
 require("dotenv").config();
@@ -10,10 +12,12 @@ require("dotenv").config();
 // @desc To create an account
 // @access Public
 const register = async (req, res, next) => {
-  const { name, email, password } = req.body;
+  const { name, email, roles } = req.body;
+  const originalPassword = req.body.password;
+  // const { roles } = req.body;
 
   try {
-    if (!name || !email || !password) {
+    if (!name || !email || !originalPassword) {
       return next(
         new BaseError(
           "Input missing required field(s).",
@@ -35,18 +39,37 @@ const register = async (req, res, next) => {
         )
       );
     } else {
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(originalPassword, 10);
 
       const createdUser = await User.create({
         businessName: name,
         businessEmail: email,
         password: hashedPassword,
       });
+      const { password, ...others } = createdUser.dataValues;
+      // const userRole = createdUser
+      if (roles) {
+        const userRole = await Role.findAll({
+          where: {
+            name: {
+              [Op.or]: roles,
+            },
+          },
+        });
+        // console.log(`This is the role of ${name} ... ${userRole}`);
+        console.log(userRole);
+        const userWithRoles = await createdUser.setRoles(userRole);
+        console.log(userWithRoles);
+      } else {
+        const userWithRoles = await createdUser.setRoles([1]);
+        console.log(userWithRoles);
+      }
 
       res.status(httpStatusCodes.CREATED).json({
         status: "Successful",
         msg: `Account creation was successful!`,
-        data: createdUser,
+        data: others,
+        // data: createdUser,
       });
     }
   } catch (error) {
@@ -103,6 +126,13 @@ const login = async (req, res, next) => {
     );
 
     const { password, ...others } = existingUser.dataValues;
+    const authorities = [];
+    const userRoles = await existingUser.getRoles();
+    console.log(userRoles);
+
+    for (let i = 0; i < userRoles.length; i++) {
+      authorities.push("ROLE_" + userRoles[i].name.toUpperCase());
+    }
 
     res
       .cookie("accessToken", token, {
@@ -112,7 +142,7 @@ const login = async (req, res, next) => {
       .json({
         status: "Successful",
         msg: "You are logged in",
-        data: { ...others, token },
+        data: { ...others, roles: authorities, token },
       });
   } catch (error) {
     if (!error.statusCode) {

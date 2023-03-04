@@ -1,39 +1,32 @@
-const express = require("express");
-const cors = require("cors");
-const cookieParser = require("cookie-parser");
-const {
-  logErrorMiddleware,
-  returnError,
-} = require("./src/middlewares/error-handler");
-const authRoute = require("./src/routes/auth-route");
 const db = require("./src/models");
-const app = express();
+const Role = db.Role;
 const PORT = 6000;
 
-const corsOptions = {
-  origin: ["http://localhost:3000"],
-  methods: ["GET", "POST"],
-  allowedHeaders: ["*"],
-  credentials: true,
-  optionSuccessStatus: 200,
-};
-
-// MIDDLEWARES
-app.use(cors(corsOptions));
-app.use(cookieParser());
-app.use(express.json());
-
-app.use("/api/auth", authRoute);
-
-app.use(logErrorMiddleware);
-app.use(returnError);
+const app = require("./app");
 
 db.sequelize
   // .sync({ force: true })
   .sync()
   .then(() => {
+    // initial();
     app.listen(PORT, function () {
       console.log(`Server is running on port ${PORT}`);
     });
   })
   .catch((error) => console.log(error));
+const initial = () => {
+  Role.create({
+    id: 1,
+    name: "user",
+  });
+
+  Role.create({
+    id: 2,
+    name: "moderator",
+  });
+
+  Role.create({
+    id: 3,
+    name: "admin",
+  });
+};

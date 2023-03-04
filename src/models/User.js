@@ -1,4 +1,6 @@
 const Sequelize = require("sequelize");
+const db = require('../models')
+const UserRole = db.UserRole;
 
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define("User", {
@@ -27,6 +29,15 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
   });
+
+  User.associate = (models) => {
+      User.belongsToMany(models.Role, {
+        through: models.UserRole,
+        onDelete: "CASCADE",
+        // foreignKey: "ProductId",
+        // as: "Product",
+      });
+  }
 
   return User;
 };
