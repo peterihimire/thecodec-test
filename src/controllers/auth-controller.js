@@ -6,6 +6,7 @@ const Role = db.Role;
 const Op = db.Sequelize.Op;
 const bcrypt = require("bcryptjs");
 const { sign } = require("jsonwebtoken");
+const { validationResult, matchedData } = require("express-validator");
 require("dotenv").config();
 
 // @route POST api/auth/register
@@ -14,17 +15,29 @@ require("dotenv").config();
 const register = async (req, res, next) => {
   const { name, email, roles } = req.body;
   const originalPassword = req.body.password;
+  const errors = validationResult(req);
   // const { roles } = req.body;
 
   try {
-    if (!name || !email || !originalPassword) {
-      return next(
-        new BaseError(
-          "Input missing required field(s).",
-          httpStatusCodes.UNPROCESSABLE_ENTITY
-        )
-      );
+    if (!errors.isEmpty()) {
+      var errMsg = errors.mapped();
+      var inputData = matchedData(req);
+
+      return res.status(httpStatusCodes.UNPROCESSABLE_ENTITY).json({
+        data: errMsg,
+        inputData: inputData,
+      });
+
+      
     }
+    // if (!name || !email || !originalPassword) {
+    // return next(
+    //   new BaseError(
+    //     "Input missing required field(s).",
+    //     httpStatusCodes.UNPROCESSABLE_ENTITY
+    //   )
+    // );
+    // }
 
     const foundUser = await User.findOne({
       attributes: ["businessEmail"],

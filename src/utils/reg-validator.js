@@ -1,13 +1,7 @@
-const express = require("express");
-const { register, login } = require("../controllers/auth-controller");
-const { verifyTokenModerator } = require("../utils/verify-token");
-const { validator } = require("../utils/reg-validator");
 const { check } = require("express-validator");
-const router = express.Router();
 
-router.post(
-  "/register",
-  [
+const validator = () => {
+  return [
     check("name")
       .trim()
       .notEmpty()
@@ -43,10 +37,7 @@ router.post(
       }
       return true;
     }),
-  ],
-  // verifyTokenModerator,
-  register
-);
-router.post("/login", login);
+  ];
+};
 
-module.exports = router;
+module.exports = { validator };
