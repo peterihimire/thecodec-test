@@ -7,7 +7,14 @@ const Op = db.Sequelize.Op;
 const bcrypt = require("bcryptjs");
 const { sign } = require("jsonwebtoken");
 const { validationResult, matchedData } = require("express-validator");
+const crypto = require("crypto");
 require("dotenv").config();
+
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const jwtKey = process.env.JWT_KEY;
+const smsKey = process.env.SMS_KEY;
+const client = require("twilio")(accountSid, authToken);
 
 // @route POST api/auth/register
 // @desc To create an account
@@ -16,10 +23,10 @@ const register = async (req, res, next) => {
   const { name, email, roles } = req.body;
   const originalPassword = req.body.password;
   const errors = validationResult(req);
-  // const { roles } = req.body;
 
   try {
     if (!errors.isEmpty()) {
+      // var errMsg = errors.array();
       var errMsg = errors.mapped();
       var inputData = matchedData(req);
 
@@ -27,17 +34,7 @@ const register = async (req, res, next) => {
         data: errMsg,
         inputData: inputData,
       });
-
-      
     }
-    // if (!name || !email || !originalPassword) {
-    // return next(
-    //   new BaseError(
-    //     "Input missing required field(s).",
-    //     httpStatusCodes.UNPROCESSABLE_ENTITY
-    //   )
-    // );
-    // }
 
     const foundUser = await User.findOne({
       attributes: ["businessEmail"],
@@ -165,4 +162,85 @@ const login = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login };
+// @route POST api/auth/send-otp
+// @desc To send SMS OTP to user
+// @access Public
+const sendotp = async (req, res, next) => {
+  const { phone } = req.body;
+  const otp = Math.floor(1000 + Math.random() * 9000);
+  const ttl = 5 * 60 * 1000;
+  const expire = Date.now() + ttl;
+  const data = `${phone}.${otp}.${expire}`;
+  const hash = crypto.createHmac("sha256", smsKey).update(data).digest("hex");
+  const fullhash = `${hash}.${expire}`;
+  console.log(otp);
+  try {
+    const message = await client.messages.create({
+      body: `Your One Time Password for recallo lite is ${otp}`,
+      from: +15074194727,
+      to: phone,
+    });
+    console.log(message.sid);
+    // const success = await message;
+
+    res.status(httpStatusCodes.OK).json({
+      status: "Successful",
+      msg: "OTP Sent.",
+      data: { phone, hash: fullhash, otp },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @route POST api/auth/verify-otp
+// @desc To verify SMS OTP recieved
+// @access Public
+const verifyotp = async (req, res, next) => {
+  const { phone, otp } = req.body;
+  const originalHash = req.body.hash;
+
+  const [hash, expire] = originalHash.split(".");
+  const now = Date.now();
+
+  try {
+    if (now > parseInt(expire)) {
+      return next(
+        new BaseError(
+          "Timeout , Please try again!",
+          httpStatusCodes.UNAUTHORIZED
+        )
+      );
+    }
+
+    const data = `${phone}.${otp}.${expire}`;
+    const verifyhash = crypto
+      .createHmac("sha256", smsKey)
+      .update(data)
+      .digest("hex");
+    //  const fullhash = `${hash}.${expire}`;
+
+    if (verifyhash !== hash) {
+      return next(
+        new BaseError(
+          "Invalid or incorrect OTP !",
+          httpStatusCodes.UNAUTHORIZED
+        )
+      );
+    }
+
+    res.status(httpStatusCodes.OK).json({
+      status: "Successful",
+      msg: "OTP Verified.",
+      // data: { phone, hash: fullhash, otp },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+module.exports = {
+  register,
+  login,
+  sendotp,
+  verifyotp,
+};

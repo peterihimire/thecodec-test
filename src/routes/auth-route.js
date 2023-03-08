@@ -1,52 +1,13 @@
 const express = require("express");
-const { register, login } = require("../controllers/auth-controller");
-const { verifyTokenModerator } = require("../utils/verify-token");
-const { validator } = require("../utils/reg-validator");
-const { check } = require("express-validator");
+const { register, login, sendotp, verifyotp } = require("../controllers/auth-controller");
+// const { verifyTokenModerator } = require("../utils/verify-token");
+const { RegValidator } = require("../utils/auth-validator");
+// const { check } = require("express-validator");
 const router = express.Router();
-
-router.post(
-  "/register",
-  [
-    check("name")
-      .trim()
-      .notEmpty()
-      .withMessage("Name required")
-      .matches(/^[a-zA-Z ]*$/)
-      .withMessage("Only Characters with white space are allowed"),
-    check("email")
-      .notEmpty()
-      .withMessage("Email address required")
-      .normalizeEmail()
-      .isEmail()
-      .withMessage("Must be a valid email."),
-    check("password")
-      .trim()
-      .notEmpty()
-      .withMessage("Password required")
-      .isLength({ min: 5 })
-      .withMessage("password must be minimum 5 length")
-      .matches(/(?=.*?[A-Z])/)
-      .withMessage("At least one Uppercase")
-      .matches(/(?=.*?[a-z])/)
-      .withMessage("At least one Lowercase")
-      .matches(/(?=.*?[0-9])/)
-      .withMessage("At least one Number")
-      .matches(/(?=.*?[#?!@$%^&*-])/)
-      .withMessage("At least one special character")
-      .not()
-      .matches(/^$|\s+/)
-      .withMessage("White space not allowed"),
-    check("confirmpassword").custom((value, { req }) => {
-      if (value !== req.body.password) {
-        throw new Error("Password Confirmation does not match password");
-      }
-      return true;
-    }),
-  ],
-  // verifyTokenModerator,
-  register
-);
+console.log(RegValidator);
+router.post("/register", RegValidator, register);
+router.post("/send-otp", sendotp);
+router.post("/verify-otp", verifyotp);
 router.post("/login", login);
 
 module.exports = router;
