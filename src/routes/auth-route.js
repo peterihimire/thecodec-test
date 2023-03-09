@@ -1,10 +1,14 @@
 const express = require("express");
-const { register, login, sendotp, verifyotp } = require("../controllers/auth-controller");
+const router = express.Router();
 // const { verifyTokenModerator } = require("../utils/verify-token");
 const { RegValidator } = require("../utils/auth-validator");
-// const { check } = require("express-validator");
-const router = express.Router();
-console.log(RegValidator);
+const {
+  register,
+  login,
+  sendotp,
+  verifyotp,
+} = require("../controllers/auth-controller");
+
 router.post("/register", RegValidator, register);
 router.post("/send-otp", sendotp);
 router.post("/verify-otp", verifyotp);

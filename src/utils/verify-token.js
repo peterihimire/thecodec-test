@@ -83,8 +83,8 @@ const verifyTokenAdminAndModerator = (req, res, next) => {
   });
 };
 
-// ADMIN AND MODERATOR ONLY
-const verifyTokenAdminAndUser = (req, res, next) => {
+// ADMIN AND USER ONLY
+const verifyTokenAndAuthorization = (req, res, next) => {
   verifyToken(req, res, async () => {
     const foundUser = await User.findByPk(req.user.id);
     const userRoles = await foundUser.getRoles();
@@ -94,14 +94,14 @@ const verifyTokenAdminAndUser = (req, res, next) => {
         return;
       }
 
-      if (userRoles[i].name === "user") {
+      if (req.user.id === req.params.userId && userRoles[i].name === "user") {
         next();
         return;
       }
     }
     return next(
       new BaseError(
-        "Requires Admin Or User Role!",
+        "Requires Admin Or User Authorization !",
         httpStatusCodes.UNAUTHORIZED
       )
     );
@@ -113,5 +113,5 @@ module.exports = {
   verifyTokenModerator,
   verifyTokenAdmin,
   verifyTokenAdminAndModerator,
-    verifyTokenAdminAndUser
+  verifyTokenAndAuthorization,
 };

@@ -67,12 +67,12 @@ const register = async (req, res, next) => {
           },
         });
         // console.log(`This is the role of ${name} ... ${userRole}`);
-        console.log(userRole);
+        // console.log(userRole);
         const userWithRoles = await createdUser.setRoles(userRole);
-        console.log(userWithRoles);
+        // console.log(userWithRoles);
       } else {
         const userWithRoles = await createdUser.setRoles([1]);
-        console.log(userWithRoles);
+        // console.log(userWithRoles);
       }
 
       res.status(httpStatusCodes.CREATED).json({
@@ -180,13 +180,13 @@ const sendotp = async (req, res, next) => {
       from: +15074194727,
       to: phone,
     });
-    console.log(message.sid);
+    // console.log(message.sid);
     // const success = await message;
 
     res.status(httpStatusCodes.OK).json({
       status: "Successful",
       msg: "OTP Sent.",
-      data: { phone, hash: fullhash, otp },
+      data: { phone, hash: fullhash, otp, message },
     });
   } catch (err) {
     next(err);
