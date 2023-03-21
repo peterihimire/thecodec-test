@@ -186,7 +186,7 @@ const sendotp = async (req, res, next) => {
     res.status(httpStatusCodes.OK).json({
       status: "Successful",
       msg: "OTP Sent.",
-      data: { phone, hash: fullhash, otp, message },
+      data: { phone, hash: fullhash, otp },
     });
   } catch (err) {
     next(err);
