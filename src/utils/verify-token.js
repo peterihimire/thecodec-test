@@ -1,8 +1,17 @@
-const { verify } = require("jsonwebtoken");
+const { verify, TokenExpiredError } = require("jsonwebtoken");
 const httpStatusCodes = require("./http-status-codes");
 const BaseError = require("../utils/base-error");
 const db = require("../models");
 const User = db.User;
+
+const catchError = (err, res) => {
+  if (err instanceof TokenExpiredError) {
+    return res
+      .status(httpStatusCodes.UNAUTHORIZED)
+      .json("Unauthorized access token was expired!");
+  }
+  return res.status(httpStatusCodes.UNAUTHORIZED).json("Unauthorized!");
+};
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers.token;
@@ -10,10 +19,10 @@ const verifyToken = (req, res, next) => {
   if (authHeader) {
     const token = authHeader.split(" ")[1];
     verify(token, process.env.JWT_KEY, (err, user) => {
-      if (err)
-        return res
-          .status(httpStatusCodes.FORBIDDEN)
-          .json("Expired or invalid token!");
+      if (err) return catchError(err, res);
+      // return res
+      //   .status(httpStatusCodes.FORBIDDEN)
+      //   .json("Expired or invalid token!");
       req.user = user;
       next();
     });

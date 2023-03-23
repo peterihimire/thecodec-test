@@ -7,11 +7,13 @@ const {
   login,
   sendotp,
   verifyotp,
+  refreshtoken,
 } = require("../controllers/auth-controller");
 
 router.post("/register", RegValidator, register);
 router.post("/send-otp", sendotp);
 router.post("/verify-otp", verifyotp);
 router.post("/login", login);
+router.post("/refresh-token", refreshtoken);
 
 module.exports = router;

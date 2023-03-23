@@ -14,7 +14,7 @@ function returnError(err, req, res, next) {
 
   res.status(err.code || 500);
   res.json({
-    status: "Unsuccessful",
+    status: "Fail",
     msg: err.message || "An unknown error occurred !",
   });
 }

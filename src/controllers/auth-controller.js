@@ -3,11 +3,13 @@ const httpStatusCodes = require("../utils/http-status-codes");
 const db = require("../models");
 const User = db.User;
 const Role = db.Role;
+const RefreshToken = db.RefreshToken;
 const Op = db.Sequelize.Op;
 const bcrypt = require("bcryptjs");
 const { sign } = require("jsonwebtoken");
 const { validationResult, matchedData } = require("express-validator");
 const crypto = require("crypto");
+const config = require('../config/auth.config')
 require("dotenv").config();
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -132,8 +134,10 @@ const login = async (req, res, next) => {
         id: existingUser.id,
       },
       process.env.JWT_KEY,
-      { expiresIn: "1h" }
+      { expiresIn: config.jwt_expiration }
     );
+
+    let refreshToken = await RefreshToken.createToken(existingUser);
 
     const { password, ...others } = existingUser.dataValues;
     const authorities = [];
@@ -150,9 +154,14 @@ const login = async (req, res, next) => {
       })
       .status(httpStatusCodes.OK)
       .json({
-        status: "Successful",
+        status: "Success",
         msg: "You are logged in",
-        data: { ...others, roles: authorities, token },
+        data: {
+          ...others,
+          roles: authorities,
+          accessToken: token,
+          refreshToken: refreshToken,
+        },
       });
   } catch (error) {
     if (!error.statusCode) {
@@ -184,7 +193,7 @@ const sendotp = async (req, res, next) => {
     // const success = await message;
 
     res.status(httpStatusCodes.OK).json({
-      status: "Successful",
+      status: "Success",
       msg: "OTP Sent.",
       data: { phone, hash: fullhash, otp },
     });
@@ -230,7 +239,7 @@ const verifyotp = async (req, res, next) => {
     }
 
     res.status(httpStatusCodes.OK).json({
-      status: "Successful",
+      status: "Success",
       msg: "OTP Verified.",
       // data: { phone, hash: fullhash, otp },
     });
@@ -238,9 +247,63 @@ const verifyotp = async (req, res, next) => {
     next(err);
   }
 };
+
+const refreshtoken = async (req, res, next) => {
+  const { refreshToken } = req.body;
+
+  if (refreshToken == null) {
+    return res
+      .status(httpStatusCodes.FORBIDDEN)
+      .json({ status: "Fail", msg: "Refresh Token is required!" });
+  }
+
+  try {
+    const existingToken = await RefreshToken.findOne({
+      where: { token: refreshToken },
+    });
+
+    console.log("This is refresh token to be Okay...", existingToken);
+
+    if (!existingToken) {
+      res.status(httpStatusCodes.FORBIDDEN).json({
+        status: "Fail",
+        msg: "Refresh token is not in database!",
+      });
+      return;
+    }
+
+    if (RefreshToken.verifyExpiration(existingToken)) {
+      await RefreshToken.destroy({ where: { id: existingToken.id } });
+
+      res.status(httpStatusCodes.FORBIDDEN).json({
+        status: "Fail",
+        msg: "Refresh token was expired. Please make a new signin request",
+      });
+      return;
+    }
+
+    const user = await existingToken.getUser();
+    let newAccessToken = sign({ id: user.id }, process.env.JWT_KEY, {
+      expiresIn: config.jwt_expiration,
+    });
+
+    return res.status(httpStatusCodes.OK).json({
+      status: "Success",
+      msg: "New Access Token and Refresh Token.",
+      data: {
+        accessToken: newAccessToken,
+        refreshToken: existingToken.token,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   register,
   login,
   sendotp,
   verifyotp,
+  refreshtoken,
 };

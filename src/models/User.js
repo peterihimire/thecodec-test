@@ -1,5 +1,5 @@
 const Sequelize = require("sequelize");
-const db = require('../models')
+const db = require("../models");
 // const UserRole = db.UserRole;
 
 module.exports = (sequelize, DataTypes) => {
@@ -31,13 +31,19 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   User.associate = (models) => {
-      User.belongsToMany(models.Role, {
-        through: models.UserRole,
-        onDelete: "CASCADE",
-        // foreignKey: "ProductId",
-        // as: "Product",
-      });
-  }
+    User.belongsToMany(models.Role, {
+      through: models.UserRole,
+      onDelete: "CASCADE",
+      // foreignKey: "ProductId",
+      // as: "Product",
+    });
+
+    User.hasOne(models.RefreshToken, {
+      onDelete: "CASCADE",
+      foreignKey: "UserId",
+      targetKey: "id",
+    });
+  };
 
   return User;
 };
