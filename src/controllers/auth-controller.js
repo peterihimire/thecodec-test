@@ -9,7 +9,7 @@ const bcrypt = require("bcryptjs");
 const { sign } = require("jsonwebtoken");
 const { validationResult, matchedData } = require("express-validator");
 const crypto = require("crypto");
-const config = require('../config/auth.config')
+const config = require("../config/auth.config");
 require("dotenv").config();
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -59,7 +59,7 @@ const register = async (req, res, next) => {
         password: hashedPassword,
       });
       const { password, ...others } = createdUser.dataValues;
-      // const userRole = createdUser
+
       if (roles) {
         const userRole = await Role.findAll({
           where: {
@@ -68,8 +68,7 @@ const register = async (req, res, next) => {
             },
           },
         });
-        // console.log(`This is the role of ${name} ... ${userRole}`);
-        // console.log(userRole);
+
         const userWithRoles = await createdUser.setRoles(userRole);
         // console.log(userWithRoles);
       } else {
@@ -81,7 +80,6 @@ const register = async (req, res, next) => {
         status: "Successful",
         msg: `Account creation was successful!`,
         data: others,
-        // data: createdUser,
       });
     }
   } catch (error) {
