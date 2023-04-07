@@ -69,10 +69,10 @@ const register = async (req, res, next) => {
           },
         });
 
-        const userWithRoles = await createdUser.setRoles(userRole);
+        await createdUser.setRoles(userRole);
         // console.log(userWithRoles);
       } else {
-        const userWithRoles = await createdUser.setRoles([1]);
+        await createdUser.setRoles([1]);
         // console.log(userWithRoles);
       }
 
